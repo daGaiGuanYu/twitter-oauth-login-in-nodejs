@@ -23,7 +23,7 @@ async function main () {
   app.use(cookieParser())
   app.use(session({ secret: COOKIE_SECRET || 'secret' }))
 
-  app.listen(3000, () => console.log('listening on http://127.0.0.1:3000'))
+  app.listen(8081, () => console.log('listening on 8081'))
 
   app.get('/', async (req, res, next) => {
     console.log('/ req.cookies', req.cookies)
@@ -69,15 +69,19 @@ async function main () {
     console.log('/twitter/callback', { oauthRequestToken, oauthRequestTokenSecret, oauthVerifier })
 
     const { oauthAccessToken, oauthAccessTokenSecret, results } = await getOAuthAccessTokenWith({ oauthRequestToken, oauthRequestTokenSecret, oauthVerifier })
+    .catch(err => console.error('tokenwith', err))
+    console.log({ results })
+
     req.session.oauthAccessToken = oauthAccessToken
 
-    const { user_id: userId /*, screen_name */ } = results
-    const user = await oauthGetUserById(userId, { oauthAccessToken, oauthAccessTokenSecret })
+    // const { user_id: userId /*, screen_name */ } = results
+    // const user = await oauthGetUserById(userId, { oauthAccessToken, oauthAccessTokenSecret })
+    // .catch(err => console.error('oauthGetUserById', err))
+    
+    req.session.twitter_screen_name = results.screen_name
+    res.cookie('twitter_screen_name', results.screen_name, { maxAge: 900000, httpOnly: true })
 
-    req.session.twitter_screen_name = user.screen_name
-    res.cookie('twitter_screen_name', user.screen_name, { maxAge: 900000, httpOnly: true })
-
-    console.log('user succesfully logged in with twitter', user.screen_name)
+    console.log('user succesfully logged in with twitter', results.screen_name)
     req.session.save(() => res.redirect('/'))
   })
 }
